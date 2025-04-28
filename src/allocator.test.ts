@@ -1,5 +1,7 @@
 import {describe, it, expect} from 'vitest';
 import {Deposit, DepositPlan, PlanType, Portfolio} from "./types.ts";
+import {allocateDeposits} from "./allocator.ts";
+
 
 describe('Deposit Allocator', () => {
     it('should allocate funds according when deposits amounts match plans', () => {
