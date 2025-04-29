@@ -91,7 +91,7 @@ describe('Deposit Allocator', () => {
         expect(result).toEqual(expectedResult);
     });
 
-    it('should only deactivate the one-time plan if it is fulfilled fully', () => {
+    it('should only deactivate the one-time plan if it is fully fulfilled', () => {
         const portfolios: Portfolio[] = [
             {id: 'p1', name: 'High risk'},
             {id: 'p2', name: 'Retirement'}
