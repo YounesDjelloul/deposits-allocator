@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {Deposit, DepositPlan, PlanType, Portfolio} from "./types.ts";
+import {Deposit, DepositPlan, PlanType, Portfolio, PortfolioAllocation} from "./types.ts";
 import {allocateDeposits} from "./allocator.ts";
 
 
@@ -40,9 +40,11 @@ describe('Deposit Allocator', () => {
 
         const result = allocateDeposits(portfolios, depositPlans, deposits);
 
-        expect(result).toEqual([
+        const expectedResult: PortfolioAllocation[] = [
             {portfolioId: 'p1', amount: 10000},
             {portfolioId: 'p2', amount: 600}
-        ]);
+        ];
+
+        expect(result).toEqual(expectedResult);
     });
 });

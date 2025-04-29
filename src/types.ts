@@ -27,3 +27,8 @@ export interface Deposit {
     referenceCode: string;
     timestamp: Date;
 }
+
+export interface PortfolioAllocation {
+    portfolioId: string;
+    amount: number;
+}
