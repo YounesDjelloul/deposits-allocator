@@ -22,15 +22,6 @@ export const allocateDeposits = (portfolios: Portfolio[], depositPlans: DepositP
             oneTimePlan.isActive = false;
         } else if (monthlyPlan && deposit.amount === monthlyPlan.totalAmount) {
             planToUse = monthlyPlan;
-        } else {
-            // There is none exact matches
-
-            if (oneTimePlan) {
-                planToUse = oneTimePlan;
-                oneTimePlan.isActive = false;
-            } else if (monthlyPlan) {
-                planToUse = monthlyPlan;
-            }
         }
 
         if (planToUse) {
