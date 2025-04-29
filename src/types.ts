@@ -32,8 +32,3 @@ export interface PortfolioAllocation {
     portfolioId: string;
     amount: number;
 }
-
-export interface PlanSelectionResult {
-    plan: DepositPlan;
-    shouldDeactivate: boolean;
-}
