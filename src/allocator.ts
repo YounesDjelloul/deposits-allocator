@@ -1,9 +1,9 @@
-import {Portfolio, DepositPlan, Deposit, PortfolioAllocation, PlanType, PlanSelectionResult} from './types';
+import {Portfolio, DepositPlan, Deposit, PortfolioAllocation, PlanType} from './types';
 
-export const selectPlanForDeposit = (
+const selectPlanForDeposit = (
     deposit: Deposit,
     depositPlans: DepositPlan[]
-): PlanSelectionResult | null => {
+): DepositPlan | null => {
     let oneTimePlan: DepositPlan | undefined;
     let monthlyPlan: DepositPlan | undefined;
 
@@ -17,20 +17,18 @@ export const selectPlanForDeposit = (
     }
 
     if (oneTimePlan) {
-        const shouldDeactivate = deposit.amount >= oneTimePlan.totalAmount;
-
-        return {plan: oneTimePlan, shouldDeactivate};
+        return oneTimePlan;
     }
 
     if (monthlyPlan && deposit.amount === monthlyPlan.totalAmount) {
-        return {plan: monthlyPlan, shouldDeactivate: false};
+        return monthlyPlan;
     }
 
     return null;
 };
 
 
-export const applyPlanToResult = (
+const applyPlanToResult = (
     plan: DepositPlan,
     deposit: Deposit,
     result: PortfolioAllocation[]
@@ -52,6 +50,13 @@ export const applyPlanToResult = (
 };
 
 
+const shouldDeactivatePlan = (
+    plan: DepositPlan,
+    planFulfillment: Record<string, number>,
+): boolean => {
+    return planFulfillment[plan.id] >= plan.totalAmount
+}
+
 export const allocateDeposits = (
     portfolios: Portfolio[],
     depositPlans: DepositPlan[],
@@ -62,14 +67,26 @@ export const allocateDeposits = (
         amount: 0
     }));
 
+    const planFulfillment: Record<string, number> = {};
+
+    for (const plan of depositPlans) {
+        if (plan.type === PlanType.ONE_TIME) {
+            planFulfillment[plan.id] = 0;
+        }
+    }
+
     for (const deposit of deposits) {
-        const planSelection = selectPlanForDeposit(deposit, depositPlans);
+        const selectedPlan = selectPlanForDeposit(deposit, depositPlans);
 
-        if (planSelection) {
-            applyPlanToResult(planSelection.plan, deposit, result);
+        if (selectedPlan) {
+            applyPlanToResult(selectedPlan, deposit, result);
 
-            if (planSelection.shouldDeactivate) {
-                planSelection.plan.isActive = false;
+            if (selectedPlan.type === PlanType.ONE_TIME) {
+                planFulfillment[selectedPlan.id] += deposit.amount;
+
+                if (shouldDeactivatePlan(selectedPlan, planFulfillment)) {
+                    selectedPlan.isActive = false;
+                }
             }
         }
     }
