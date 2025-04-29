@@ -50,7 +50,7 @@ const applyPlanToResult = (
 };
 
 
-const shouldDeactivatePlan = (
+const isPlanFulfilled = (
     plan: DepositPlan,
     planFulfillment: Record<string, number>,
 ): boolean => {
@@ -84,7 +84,7 @@ export const allocateDeposits = (
             if (selectedPlan.type === PlanType.ONE_TIME) {
                 planFulfillment[selectedPlan.id] += deposit.amount;
 
-                if (shouldDeactivatePlan(selectedPlan, planFulfillment)) {
+                if (isPlanFulfilled(selectedPlan, planFulfillment)) {
                     selectedPlan.isActive = false;
                 }
             }
