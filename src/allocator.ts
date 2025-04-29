@@ -1,6 +1,6 @@
 import {Portfolio, DepositPlan, Deposit, PortfolioAllocation, PlanType, PlanSelectionResult} from './types';
 
-const selectPlanForDeposit = (
+export const selectPlanForDeposit = (
     deposit: Deposit,
     depositPlans: DepositPlan[]
 ): PlanSelectionResult | null => {
@@ -16,7 +16,7 @@ const selectPlanForDeposit = (
         if (oneTimePlan && monthlyPlan) break;
     }
 
-    if (oneTimePlan && deposit.amount === oneTimePlan.totalAmount) {
+    if (oneTimePlan) {
         return {plan: oneTimePlan, shouldDeactivate: true};
     }
 
@@ -28,20 +28,27 @@ const selectPlanForDeposit = (
 };
 
 
-const applyPlanToResult = (
+export const applyPlanToResult = (
     plan: DepositPlan,
+    deposit: Deposit,
     result: PortfolioAllocation[]
 ): void => {
-    for (const planAllocation of plan.allocations) {
-        const portfolioAllocation = result.find(
-            pa => pa.portfolioId === planAllocation.portfolioId
-        );
+    const ratio = deposit.amount / plan.totalAmount;
 
-        if (portfolioAllocation) {
-            portfolioAllocation.amount += planAllocation.amount;
-        }
+    const resultMap = new Map(result.map(pa => [pa.portfolioId, pa]));
+
+    for (const planAllocation of plan.allocations) {
+        const portfolioAllocation = resultMap.get(planAllocation.portfolioId);
+        if (!portfolioAllocation) continue;
+
+        const amountToAdd = deposit.amount === plan.totalAmount
+            ? planAllocation.amount
+            : Math.round(planAllocation.amount * ratio * 100) / 100;
+
+        portfolioAllocation.amount += amountToAdd;
     }
 };
+
 
 export const allocateDeposits = (
     portfolios: Portfolio[],
@@ -57,7 +64,7 @@ export const allocateDeposits = (
         const planSelection = selectPlanForDeposit(deposit, depositPlans);
 
         if (planSelection) {
-            applyPlanToResult(planSelection.plan, result);
+            applyPlanToResult(planSelection.plan, deposit, result);
 
             if (planSelection.shouldDeactivate) {
                 planSelection.plan.isActive = false;
