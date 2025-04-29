@@ -4,7 +4,7 @@ import {allocateDeposits} from "./allocator.ts";
 
 
 describe('Deposit Allocator', () => {
-    it('should allocate funds according when deposits amounts match plans', () => {
+    it('should allocate funds when deposits amounts match plans', () => {
         const portfolios: Portfolio[] = [
             {id: 'p1', name: 'High risk'},
             {id: 'p2', name: 'Retirement'}
