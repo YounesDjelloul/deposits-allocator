@@ -17,7 +17,9 @@ export const selectPlanForDeposit = (
     }
 
     if (oneTimePlan) {
-        return {plan: oneTimePlan, shouldDeactivate: true};
+        const shouldDeactivate = deposit.amount >= oneTimePlan.totalAmount;
+
+        return {plan: oneTimePlan, shouldDeactivate};
     }
 
     if (monthlyPlan && deposit.amount === monthlyPlan.totalAmount) {
