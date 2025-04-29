@@ -67,16 +67,18 @@ export const allocateDeposits = (
         amount: 0
     }));
 
+    const workingPlans = JSON.parse(JSON.stringify(depositPlans)) as DepositPlan[];
+
     const planFulfillment: Record<string, number> = {};
 
-    for (const plan of depositPlans) {
+    for (const plan of workingPlans) {
         if (plan.type === PlanType.ONE_TIME) {
             planFulfillment[plan.id] = 0;
         }
     }
 
     for (const deposit of deposits) {
-        const selectedPlan = selectPlanForDeposit(deposit, depositPlans);
+        const selectedPlan = selectPlanForDeposit(deposit, workingPlans);
 
         if (selectedPlan) {
             applyPlanToResult(selectedPlan, deposit, result);
