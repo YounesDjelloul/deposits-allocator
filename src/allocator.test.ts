@@ -250,7 +250,7 @@ describe('Deposit Allocator', () => {
                     {portfolioId: 'p2', amount: 100}
                 ],
                 isActive: true,
-                totalAmount: 100
+                totalAmount: 110
             }
         ];
 
