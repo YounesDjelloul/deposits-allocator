@@ -90,29 +90,6 @@ export const applyMonthlyPlanToResult = (
     }
 };
 
-
-const fulfillPlans = (
-    plans: DepositPlan[],
-    planType: PlanType,
-    remainingAmount: number,
-    result: PortfolioAllocation[],
-    planFulfillment: Record<string, number>
-): number => {
-    for (const plan of plans) {
-        if (!isPlanEligible(plan, remainingAmount, planType)) continue;
-
-        if (planType === PlanType.ONE_TIME) {
-            remainingAmount = applyOneTimePlanToResult(plan, remainingAmount, result, planFulfillment);
-        } else if (planType === PlanType.MONTHLY) {
-            applyMonthlyPlanToResult(plan, remainingAmount, result);
-            remainingAmount = 0;
-        }
-    }
-
-    return remainingAmount;
-};
-
-
 export const allocateDeposits = (
     portfolios: Portfolio[],
     depositPlans: DepositPlan[],
@@ -139,12 +116,13 @@ export const allocateDeposits = (
     for (const deposit of deposits) {
         let remaining = deposit.amount;
 
-        if (oneTimePlan) {
-            remaining = fulfillPlans([oneTimePlan], PlanType.ONE_TIME, remaining, allocationsResult, planFulfillment);
+        if (oneTimePlan && isPlanEligible(oneTimePlan, remaining, PlanType.ONE_TIME)) {
+            remaining = applyOneTimePlanToResult(oneTimePlan, remaining, allocationsResult, planFulfillment);
         }
 
-        if (monthlyPlan && remaining > 0) {
-            remaining = fulfillPlans([monthlyPlan], PlanType.MONTHLY, remaining, allocationsResult, planFulfillment);
+        if (monthlyPlan && remaining > 0 && isPlanEligible(monthlyPlan, remaining, PlanType.MONTHLY)) {
+            applyMonthlyPlanToResult(monthlyPlan, remaining, allocationsResult);
+            remaining = 0;
         }
 
         if (!monthlyPlan && oneTimePlan && remaining > 0) {
