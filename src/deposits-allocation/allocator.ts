@@ -13,7 +13,7 @@ const distributeProportionally = (
 
     for (const a of allocations) {
         const share = new Decimal(a.amount).div(total);
-        const extra = share.mul(totalToDistribute).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+        const extra = share.mul(totalToDistribute).toDecimalPlaces(2);
         const r = resultMap.get(a.portfolioId);
         if (r) {
             r.amount = new Decimal(r.amount).plus(extra).toNumber();
@@ -22,7 +22,7 @@ const distributeProportionally = (
 };
 
 
-const applyPlanToResult = (
+export const applyOneTimePlanToResult = (
     plan: DepositPlan,
     depositAmount: number,
     result: PortfolioAllocation[],
@@ -44,15 +44,50 @@ const applyPlanToResult = (
 
         const amountToAdd = ratio.equals(1)
             ? allocationAmount
-            : allocationAmount.mul(ratio).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+            : allocationAmount.mul(ratio).toDecimalPlaces(2);
 
         portfolioAllocation.amount = new Decimal(portfolioAllocation.amount)
             .plus(amountToAdd)
-            .toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+            .toDecimalPlaces(2)
             .toNumber();
     }
 
+    planFulfillment[plan.id] = new Decimal(planFulfillment[plan.id] || 0)
+        .plus(amountToApply)
+        .toNumber();
+
+    if (isPlanFulfilled(plan, planFulfillment)) {
+        plan.isActive = false;
+    }
+
     return depositDecimal.minus(amountToApply).toNumber();
+};
+
+export const applyMonthlyPlanToResult = (
+    plan: DepositPlan,
+    depositAmount: number,
+    result: PortfolioAllocation[]
+): void => {
+    const depositDecimal = new Decimal(depositAmount);
+    const totalAllocation = plan.allocations.reduce((sum, a) => sum.plus(a.amount), new Decimal(0));
+    const ratio = depositDecimal.div(totalAllocation);
+
+    const resultMap = new Map(result.map(pa => [pa.portfolioId, pa]));
+
+    for (const planAllocation of plan.allocations) {
+        const portfolioAllocation = resultMap.get(planAllocation.portfolioId);
+        if (!portfolioAllocation) continue;
+
+        const allocationAmount = new Decimal(planAllocation.amount);
+        const amountToAdd = allocationAmount
+            .mul(ratio)
+            .toDecimalPlaces(2);
+
+        portfolioAllocation.amount = new Decimal(portfolioAllocation.amount)
+            .plus(amountToAdd)
+            .toDecimalPlaces(2)
+            .toNumber();
+    }
 };
 
 
@@ -66,15 +101,11 @@ const fulfillPlans = (
     for (const plan of plans) {
         if (!isPlanEligible(plan, remainingAmount, planType)) continue;
 
-        const amountBeforeApply = remainingAmount;
-        remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
-        const appliedAmount = amountBeforeApply - remainingAmount;
-
         if (planType === PlanType.ONE_TIME) {
-            planFulfillment[plan.id] += appliedAmount;
-            if (isPlanFulfilled(plan, planFulfillment)) {
-                plan.isActive = false;
-            }
+            remainingAmount = applyOneTimePlanToResult(plan, remainingAmount, result, planFulfillment);
+        } else if (planType === PlanType.MONTHLY) {
+            applyMonthlyPlanToResult(plan, remainingAmount, result);
+            remainingAmount = 0;
         }
     }
 
