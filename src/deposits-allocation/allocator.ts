@@ -11,16 +11,16 @@ const distributeProportionally = (
     const total = allocations.reduce((sum, a) => sum + a.amount, 0);
     const resultMap = new Map(result.map(r => [r.portfolioId, r]));
 
-    for (const a of allocations) {
-        const share = new Decimal(a.amount).div(total);
+    for (const allocation of allocations) {
+        const share = new Decimal(allocation.amount).div(total);
         const extra = share.mul(totalToDistribute).toDecimalPlaces(2);
-        const r = resultMap.get(a.portfolioId);
-        if (r) {
-            r.amount = new Decimal(r.amount).plus(extra).toNumber();
+        const portfolioAllocation = resultMap.get(allocation.portfolioId);
+
+        if (portfolioAllocation) {
+            portfolioAllocation.amount = new Decimal(portfolioAllocation.amount).plus(extra).toNumber();
         }
     }
 };
-
 
 export const applyOneTimePlanToResult = (
     plan: DepositPlan,
@@ -68,26 +68,7 @@ export const applyMonthlyPlanToResult = (
     depositAmount: number,
     result: PortfolioAllocation[]
 ): void => {
-    const depositDecimal = new Decimal(depositAmount);
-    const totalAllocation = plan.allocations.reduce((sum, a) => sum.plus(a.amount), new Decimal(0));
-    const ratio = depositDecimal.div(totalAllocation);
-
-    const resultMap = new Map(result.map(pa => [pa.portfolioId, pa]));
-
-    for (const planAllocation of plan.allocations) {
-        const portfolioAllocation = resultMap.get(planAllocation.portfolioId);
-        if (!portfolioAllocation) continue;
-
-        const allocationAmount = new Decimal(planAllocation.amount);
-        const amountToAdd = allocationAmount
-            .mul(ratio)
-            .toDecimalPlaces(2);
-
-        portfolioAllocation.amount = new Decimal(portfolioAllocation.amount)
-            .plus(amountToAdd)
-            .toDecimalPlaces(2)
-            .toNumber();
-    }
+    distributeProportionally(plan.allocations, depositAmount, result);
 };
 
 export const allocateDeposits = (
