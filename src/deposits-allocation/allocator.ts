@@ -3,6 +3,25 @@ import {areAllAmountsZeros, getRemainingToFulfill, isPlanEligible, isPlanFulfill
 import Decimal from 'decimal.js';
 
 
+const distributeProportionally = (
+    allocations: { portfolioId: string, amount: number }[],
+    totalToDistribute: number,
+    result: PortfolioAllocation[]
+): void => {
+    const total = allocations.reduce((sum, a) => sum + a.amount, 0);
+    const resultMap = new Map(result.map(r => [r.portfolioId, r]));
+
+    for (const a of allocations) {
+        const share = new Decimal(a.amount).div(total);
+        const extra = share.mul(totalToDistribute).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+        const r = resultMap.get(a.portfolioId);
+        if (r) {
+            r.amount = new Decimal(r.amount).plus(extra).toNumber();
+        }
+    }
+};
+
+
 const applyPlanToResult = (
     plan: DepositPlan,
     depositAmount: number,
@@ -68,61 +87,37 @@ export const allocateDeposits = (
     depositPlans: DepositPlan[],
     deposits: Deposit[]
 ): PortfolioAllocation[] => {
-    const allocationsResult: PortfolioAllocation[] = portfolios.map(portfolio => ({
-        portfolioId: portfolio.id,
+    const allocationsResult: PortfolioAllocation[] = portfolios.map(p => ({
+        portfolioId: p.id,
         amount: 0
     }));
 
     const allAmountsAreZeros = areAllAmountsZeros(depositPlans);
-
     if (allAmountsAreZeros) {
-        const totalDepositAmount = deposits.reduce((sum, d) => sum + d.amount, 0);
-        const equalShare = totalDepositAmount / portfolios.length;
-
-        return portfolios.map(p => ({
-            portfolioId: p.id,
-            amount: equalShare
-        }));
+        const totalAmount = deposits.reduce((sum, d) => sum + d.amount, 0);
+        const share = totalAmount / portfolios.length;
+        return portfolios.map(p => ({portfolioId: p.id, amount: share}));
     }
 
     const workingPlans = depositPlans.map(plan => structuredClone(plan));
+    const oneTimePlan = workingPlans.find(p => p.type === PlanType.ONE_TIME);
+    const monthlyPlan = workingPlans.find(p => p.type === PlanType.MONTHLY);
 
-    const planFulfillment = workingPlans
-        .filter(plan => plan.type === PlanType.ONE_TIME)
-        .reduce<Record<string, number>>((acc, plan) => {
-            acc[plan.id] = 0;
-            return acc;
-        }, {});
+    const planFulfillment: Record<string, number> = oneTimePlan ? {[oneTimePlan.id]: 0} : {};
 
     for (const deposit of deposits) {
-        let remainingAmount = deposit.amount;
+        let remaining = deposit.amount;
 
-        // fulfill one-time plan first
-        remainingAmount = fulfillPlans(workingPlans, PlanType.ONE_TIME, remainingAmount, allocationsResult, planFulfillment);
-
-        // try fulfilling monthly plan
-        const monthlyPlan = workingPlans.find(p => p.type === PlanType.MONTHLY);
-        if (monthlyPlan && remainingAmount > 0) {
-            remainingAmount = fulfillPlans(workingPlans, PlanType.MONTHLY, remainingAmount, allocationsResult, planFulfillment);
+        if (oneTimePlan) {
+            remaining = fulfillPlans([oneTimePlan], PlanType.ONE_TIME, remaining, allocationsResult, planFulfillment);
         }
 
-        // fallback: if leftover and no monthly plan, re-use one-time allocations proportionally
-        if (!monthlyPlan && remainingAmount > 0) {
-            const oneTimePlan = workingPlans.find(p => p.type === PlanType.ONE_TIME);
-            if (oneTimePlan) {
-                const total = oneTimePlan.allocations.reduce((sum, a) => sum + a.amount, 0);
-                const resultMap = new Map(allocationsResult.map(a => [a.portfolioId, a]));
+        if (monthlyPlan && remaining > 0) {
+            remaining = fulfillPlans([monthlyPlan], PlanType.MONTHLY, remaining, allocationsResult, planFulfillment);
+        }
 
-                for (const allocation of oneTimePlan.allocations) {
-                    const share = new Decimal(allocation.amount).div(total);
-                    const extra = share.mul(remainingAmount).toDecimalPlaces(2);
-
-                    const portfolioAlloc = resultMap.get(allocation.portfolioId);
-                    if (portfolioAlloc) {
-                        portfolioAlloc.amount = new Decimal(portfolioAlloc.amount).plus(extra).toNumber();
-                    }
-                }
-            }
+        if (!monthlyPlan && oneTimePlan && remaining > 0) {
+            distributeProportionally(oneTimePlan.allocations, remaining, allocationsResult);
         }
     }
 
