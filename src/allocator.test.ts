@@ -224,4 +224,49 @@ describe('Deposit Allocator', () => {
 
         expect(result).toEqual(expectedResult);
     });
+
+    it('distribute the deposit according to the ratios even if the total amount differs', () => {
+        const portfolios: Portfolio[] = [
+            {id: 'p1', name: 'High risk'},
+            {id: 'p2', name: 'Retirement'}
+        ];
+
+        const depositPlans: DepositPlan[] = [
+            {
+                id: 'dp1',
+                type: PlanType.ONE_TIME,
+                allocations: [
+                    {portfolioId: 'p1', amount: 10000},
+                    {portfolioId: 'p2', amount: 500}
+                ],
+                isActive: true,
+                totalAmount: 10500
+            },
+            {
+                id: 'dp2',
+                type: PlanType.MONTHLY,
+                allocations: [
+                    {portfolioId: 'p1', amount: 10},
+                    {portfolioId: 'p2', amount: 100}
+                ],
+                isActive: true,
+                totalAmount: 100
+            }
+        ];
+
+        const deposits: Deposit[] = [
+            {id: 'd1', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
+            {id: 'd1', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
+            {id: 'd1', amount: 80, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
+        ];
+
+        const result = allocateDeposits(portfolios, depositPlans, deposits);
+
+        const expectedResult: PortfolioAllocation[] = [
+            {portfolioId: 'p1', amount: 10007.27},
+            {portfolioId: 'p2', amount: 572.73}
+        ];
+
+        expect(result).toEqual(expectedResult);
+    });
 });
