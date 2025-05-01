@@ -9,7 +9,7 @@ export const isPlanFulfilled = (
 };
 
 export const isPlanEligible = (plan: DepositPlan, remainingAmount: number, desiredPlanType: PlanType): boolean => {
-    return plan.isActive && plan.type === desiredPlanType && remainingAmount > 0
+    return plan.isActive && plan.type === desiredPlanType && remainingAmount > 0 && plan.totalAmount > 0;
 };
 
 export const getRemainingToFulfill = (
