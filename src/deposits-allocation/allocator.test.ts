@@ -359,7 +359,7 @@ describe('Deposit Allocator', () => {
         expect(result).toEqual(expectedResult);
     });
 
-    it('should distribute deposits 50/50 on portfolios if plans has 0s only', () => {
+    it('should distribute deposits 50/50 on portfolios if all plans has 0s only', () => {
         const portfolios: Portfolio[] = [
             {id: 'p1', name: 'High risk'},
             {id: 'p2', name: 'Retirement'}
