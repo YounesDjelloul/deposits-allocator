@@ -97,15 +97,34 @@ export const allocateDeposits = (
     for (const deposit of deposits) {
         let remainingAmount = deposit.amount;
 
-        // fulfill one-time plans first
+        // fulfill one-time plan first
         remainingAmount = fulfillPlans(workingPlans, PlanType.ONE_TIME, remainingAmount, allocationsResult, planFulfillment);
 
-        // then fulfill monthly plans
-        if (remainingAmount > 0) {
-            fulfillPlans(workingPlans, PlanType.MONTHLY, remainingAmount, allocationsResult, planFulfillment);
+        // try fulfilling monthly plan
+        const monthlyPlan = workingPlans.find(p => p.type === PlanType.MONTHLY);
+        if (monthlyPlan && remainingAmount > 0) {
+            remainingAmount = fulfillPlans(workingPlans, PlanType.MONTHLY, remainingAmount, allocationsResult, planFulfillment);
+        }
+
+        // fallback: if leftover and no monthly plan, re-use one-time allocations proportionally
+        if (!monthlyPlan && remainingAmount > 0) {
+            const oneTimePlan = workingPlans.find(p => p.type === PlanType.ONE_TIME);
+            if (oneTimePlan) {
+                const total = oneTimePlan.allocations.reduce((sum, a) => sum + a.amount, 0);
+                const resultMap = new Map(allocationsResult.map(a => [a.portfolioId, a]));
+
+                for (const allocation of oneTimePlan.allocations) {
+                    const share = new Decimal(allocation.amount).div(total);
+                    const extra = share.mul(remainingAmount).toDecimalPlaces(2);
+
+                    const portfolioAlloc = resultMap.get(allocation.portfolioId);
+                    if (portfolioAlloc) {
+                        portfolioAlloc.amount = new Decimal(portfolioAlloc.amount).plus(extra).toNumber();
+                    }
+                }
+            }
         }
     }
-
 
     return allocationsResult;
 };
