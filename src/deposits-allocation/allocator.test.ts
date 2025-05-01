@@ -469,4 +469,37 @@ describe('Deposit Allocator', () => {
 
         expect(result).toEqual(expectedResult);
     });
+
+    it('should distribute the remaining of deposit amounts on the one-time plan if no monthly plan is present (no leftovers)', () => {
+        const portfolios: Portfolio[] = [
+            {id: 'p1', name: 'High risk'},
+            {id: 'p2', name: 'Retirement'}
+        ];
+
+        const depositPlans: DepositPlan[] = [
+            {
+                id: 'dp1',
+                type: PlanType.ONE_TIME,
+                allocations: [
+                    {portfolioId: 'p1', amount: 9000},
+                    {portfolioId: 'p2', amount: 500}
+                ],
+                isActive: true,
+                totalAmount: 9500
+            }
+        ];
+
+        const deposits: Deposit[] = [
+            {id: 'd1', amount: 10000, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
+        ];
+
+        const result = allocateDeposits(portfolios, depositPlans, deposits);
+
+        const expectedResult: PortfolioAllocation[] = [
+            {portfolioId: 'p1', amount: 9473.68},
+            {portfolioId: 'p2', amount: 526.32}
+        ];
+
+        expect(result).toEqual(expectedResult);
+    });
 });
