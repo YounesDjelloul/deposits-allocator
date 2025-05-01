@@ -122,7 +122,7 @@ describe('Deposit Allocator', () => {
 
         const deposits: Deposit[] = [
             {id: 'd1', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
-            {id: 'd1', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
+            {id: 'd2', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
         ];
 
         const result = allocateDeposits(portfolios, depositPlans, deposits);
@@ -166,8 +166,8 @@ describe('Deposit Allocator', () => {
 
         const deposits: Deposit[] = [
             {id: 'd1', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
-            {id: 'd1', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
-            {id: 'd1', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
+            {id: 'd2', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
+            {id: 'd3', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
         ];
 
         const result = allocateDeposits(portfolios, depositPlans, deposits);
@@ -211,8 +211,8 @@ describe('Deposit Allocator', () => {
 
         const deposits: Deposit[] = [
             {id: 'd1', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
-            {id: 'd1', amount: 5350, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
-            {id: 'd1', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
+            {id: 'd2', amount: 5350, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
+            {id: 'd3', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
         ];
 
         const result = allocateDeposits(portfolios, depositPlans, deposits);
@@ -256,8 +256,8 @@ describe('Deposit Allocator', () => {
 
         const deposits: Deposit[] = [
             {id: 'd1', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
-            {id: 'd1', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
-            {id: 'd1', amount: 80, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
+            {id: 'd2', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
+            {id: 'd3', amount: 80, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
         ];
 
         const result = allocateDeposits(portfolios, depositPlans, deposits);
@@ -301,9 +301,9 @@ describe('Deposit Allocator', () => {
 
         const deposits: Deposit[] = [
             {id: 'd1', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
-            {id: 'd1', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
-            {id: 'd1', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
-            {id: 'd1', amount: 50, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
+            {id: 'd2', amount: 5250, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
+            {id: 'd3', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
+            {id: 'd4', amount: 50, referenceCode: 'ref123', timestamp: new Date('2025-04-10')}
         ];
 
         const result = allocateDeposits(portfolios, depositPlans, deposits);
