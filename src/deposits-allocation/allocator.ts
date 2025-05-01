@@ -1,16 +1,6 @@
 import {Deposit, DepositPlan, PlanType, Portfolio, PortfolioAllocation} from './types.ts';
+import {getRemainingToFulfill, isPlanEligible, isPlanFulfilled} from "./utils.ts";
 
-
-const getRemainingToFulfill = (
-    plan: DepositPlan,
-    planFulfillment: Record<string, number>
-): number => {
-    const fulfilledAmount = planFulfillment[plan.id] || 0;
-
-    return plan.type === PlanType.ONE_TIME
-        ? Math.max(0, plan.totalAmount - fulfilledAmount)
-        : plan.totalAmount;
-};
 
 const applyPlanToResult = (
     plan: DepositPlan,
@@ -39,23 +29,38 @@ const applyPlanToResult = (
     return Math.max(0, depositAmount - amountToApply);
 };
 
-const isPlanFulfilled = (
-    plan: DepositPlan,
-    planFulfillment: Record<string, number>,
-): boolean => {
-    return planFulfillment[plan.id] >= plan.totalAmount;
+const fulfillPlans = (
+    plans: DepositPlan[],
+    planType: PlanType,
+    remainingAmount: number,
+    result: PortfolioAllocation[],
+    planFulfillment: Record<string, number>
+): number => {
+    for (const plan of plans) {
+        if (!isPlanEligible(plan, remainingAmount, planType)) continue;
+
+        const amountBeforeApply = remainingAmount;
+        remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
+        const appliedAmount = amountBeforeApply - remainingAmount;
+
+        if (planType === PlanType.ONE_TIME) {
+            planFulfillment[plan.id] += appliedAmount;
+            if (isPlanFulfilled(plan, planFulfillment)) {
+                plan.isActive = false;
+            }
+        }
+    }
+
+    return remainingAmount;
 };
 
-const isPlanEligible = (plan: DepositPlan, remainingAmount: number, desiredPlanType: PlanType): boolean => {
-    return plan.isActive && plan.type === desiredPlanType && remainingAmount > 0
-};
 
 export const allocateDeposits = (
     portfolios: Portfolio[],
     depositPlans: DepositPlan[],
     deposits: Deposit[]
 ): PortfolioAllocation[] => {
-    const result: PortfolioAllocation[] = portfolios.map(portfolio => ({
+    const allocationsResult: PortfolioAllocation[] = portfolios.map(portfolio => ({
         portfolioId: portfolio.id,
         amount: 0
     }));
@@ -72,28 +77,15 @@ export const allocateDeposits = (
     for (const deposit of deposits) {
         let remainingAmount = deposit.amount;
 
-        for (const plan of workingPlans) {
-            if (!isPlanEligible(plan, remainingAmount, PlanType.ONE_TIME)) continue;
+        // fulfill one-time plans first
+        remainingAmount = fulfillPlans(workingPlans, PlanType.ONE_TIME, remainingAmount, allocationsResult, planFulfillment);
 
-            const before = remainingAmount;
-            remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
-            const applied = before - remainingAmount;
-
-            planFulfillment[plan.id] += applied;
-
-            if (isPlanFulfilled(plan, planFulfillment)) {
-                plan.isActive = false;
-            }
-        }
-
+        // then fulfill monthly plans
         if (remainingAmount > 0) {
-            for (const plan of workingPlans) {
-                if (!isPlanEligible(plan, remainingAmount, PlanType.MONTHLY)) continue;
-
-                remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
-            }
+            fulfillPlans(workingPlans, PlanType.MONTHLY, remainingAmount, allocationsResult, planFulfillment);
         }
     }
 
-    return result;
+
+    return allocationsResult;
 };
