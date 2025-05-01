@@ -446,4 +446,27 @@ describe('Deposit Allocator', () => {
 
         expect(result).toEqual(expectedResult);
     });
+
+    it('should distribute deposits 50/50 on portfolios if none plans are passed', () => {
+        const portfolios: Portfolio[] = [
+            {id: 'p1', name: 'High risk'},
+            {id: 'p2', name: 'Retirement'}
+        ];
+
+        const depositPlans: DepositPlan[] = [];
+
+        const deposits: Deposit[] = [
+            {id: 'd1', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
+            {id: 'd2', amount: 100, referenceCode: 'ref123', timestamp: new Date('2025-04-10')},
+        ];
+
+        const result = allocateDeposits(portfolios, depositPlans, deposits);
+
+        const expectedResult: PortfolioAllocation[] = [
+            {portfolioId: 'p1', amount: 100},
+            {portfolioId: 'p2', amount: 100}
+        ];
+
+        expect(result).toEqual(expectedResult);
+    });
 });
