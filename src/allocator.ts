@@ -1,39 +1,27 @@
 import {Portfolio, DepositPlan, Deposit, PortfolioAllocation, PlanType} from './types';
 
-const selectPlanForDeposit = (
-    deposit: Deposit,
-    depositPlans: DepositPlan[]
-): DepositPlan | null => {
-    let oneTimePlan: DepositPlan | undefined;
-    let monthlyPlan: DepositPlan | undefined;
 
-    for (const plan of depositPlans) {
-        if (!plan.isActive) continue;
+const getRemainingToFulfill = (
+    plan: DepositPlan,
+    planFulfillment: Record<string, number>
+): number => {
+    const fulfilledAmount = planFulfillment[plan.id] || 0;
 
-        if (plan.type === PlanType.ONE_TIME) oneTimePlan = plan;
-        else if (plan.type === PlanType.MONTHLY) monthlyPlan = plan;
-
-        if (oneTimePlan && monthlyPlan) break;
-    }
-
-    if (oneTimePlan) {
-        return oneTimePlan;
-    }
-
-    if (monthlyPlan && deposit.amount === monthlyPlan.totalAmount) {
-        return monthlyPlan;
-    }
-
-    return null;
+    return plan.type === PlanType.ONE_TIME
+        ? Math.max(0, plan.totalAmount - fulfilledAmount)
+        : plan.totalAmount;
 };
-
 
 const applyPlanToResult = (
     plan: DepositPlan,
-    deposit: Deposit,
-    result: PortfolioAllocation[]
-): void => {
-    const ratio = deposit.amount / plan.totalAmount;
+    depositAmount: number,
+    result: PortfolioAllocation[],
+    planFulfillment: Record<string, number>
+): number => {
+    const remainingToFulfill = getRemainingToFulfill(plan, planFulfillment);
+
+    const amountToApply = Math.min(depositAmount, remainingToFulfill);
+    const ratio = amountToApply / plan.totalAmount;
 
     const resultMap = new Map(result.map(pa => [pa.portfolioId, pa]));
 
@@ -41,21 +29,22 @@ const applyPlanToResult = (
         const portfolioAllocation = resultMap.get(planAllocation.portfolioId);
         if (!portfolioAllocation) continue;
 
-        const amountToAdd = deposit.amount === plan.totalAmount
+        const amountToAdd = ratio === 1
             ? planAllocation.amount
             : Math.round(planAllocation.amount * ratio * 100) / 100;
 
         portfolioAllocation.amount += amountToAdd;
     }
-};
 
+    return Math.max(0, depositAmount - amountToApply);
+};
 
 const isPlanFulfilled = (
     plan: DepositPlan,
     planFulfillment: Record<string, number>,
 ): boolean => {
-    return planFulfillment[plan.id] >= plan.totalAmount
-}
+    return planFulfillment[plan.id] >= plan.totalAmount;
+};
 
 export const allocateDeposits = (
     portfolios: Portfolio[],
@@ -70,7 +59,6 @@ export const allocateDeposits = (
     const workingPlans = JSON.parse(JSON.stringify(depositPlans)) as DepositPlan[];
 
     const planFulfillment: Record<string, number> = {};
-
     for (const plan of workingPlans) {
         if (plan.type === PlanType.ONE_TIME) {
             planFulfillment[plan.id] = 0;
@@ -78,16 +66,33 @@ export const allocateDeposits = (
     }
 
     for (const deposit of deposits) {
-        const selectedPlan = selectPlanForDeposit(deposit, workingPlans);
+        let remainingAmount = deposit.amount;
 
-        if (selectedPlan) {
-            applyPlanToResult(selectedPlan, deposit, result);
+        for (let i = 0; i < workingPlans.length && remainingAmount > 0; i++) {
+            const plan = workingPlans[i];
 
-            if (selectedPlan.type === PlanType.ONE_TIME) {
-                planFulfillment[selectedPlan.id] += deposit.amount;
+            if (!plan.isActive) continue;
 
-                if (isPlanFulfilled(selectedPlan, planFulfillment)) {
-                    selectedPlan.isActive = false;
+            if (plan.type === PlanType.ONE_TIME) {
+                const appliedAmount = deposit.amount - remainingAmount;
+                remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
+
+                planFulfillment[plan.id] += (deposit.amount - appliedAmount - remainingAmount);
+
+                if (isPlanFulfilled(plan, planFulfillment)) {
+                    plan.isActive = false;
+                }
+            }
+        }
+
+        if (remainingAmount > 0) {
+            for (let i = 0; i < workingPlans.length && remainingAmount > 0; i++) {
+                const plan = workingPlans[i];
+
+                if (!plan.isActive || plan.type === PlanType.ONE_TIME) continue;
+
+                if (plan.type === PlanType.MONTHLY && remainingAmount === plan.totalAmount) {
+                    remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
                 }
             }
         }
