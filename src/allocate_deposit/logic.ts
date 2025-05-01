@@ -79,7 +79,7 @@ const calculateOneTimePlanAllocation = (
     };
 };
 
-export const calculateMonthlyPlanAllocation = (
+const calculateMonthlyPlanAllocation = (
     plan: DepositPlan,
     depositAmount: number,
     currentAllocations: PortfolioAllocation[]
@@ -106,7 +106,7 @@ export const calculateMonthlyPlanAllocation = (
     });
 };
 
-export const calculateEqualDistribution = (
+const calculateEqualDistribution = (
     portfolios: Portfolio[],
     totalAmount: number
 ): PortfolioAllocation[] => {
