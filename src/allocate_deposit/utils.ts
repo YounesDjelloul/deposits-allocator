@@ -1,4 +1,4 @@
-import {DepositPlan, PlanType} from "./types.ts";
+import {DepositPlan, PlanType} from "./model.ts";
 import Decimal from "decimal.js";
 
 export const isPlanFulfilled = (

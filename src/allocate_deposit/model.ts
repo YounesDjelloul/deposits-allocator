@@ -32,3 +32,7 @@ export interface PortfolioAllocation {
     portfolioId: string;
     amount: number;
 }
+
+export interface PlanFulfillment {
+    [planId: string]: number;
+}

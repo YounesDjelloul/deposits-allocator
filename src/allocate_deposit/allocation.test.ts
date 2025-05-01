@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest';
-import {Deposit, DepositPlan, PlanType, Portfolio, PortfolioAllocation} from "./types.ts";
-import {allocateDeposits} from "./allocator.ts";
+import {Deposit, DepositPlan, PlanType, Portfolio, PortfolioAllocation} from "./model.ts";
+import {allocateDeposits} from "./main.ts";
 
 
 describe('Deposit Allocator', () => {
