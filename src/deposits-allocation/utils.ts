@@ -24,3 +24,7 @@ export const getRemainingToFulfill = (
             .toNumber()
         : new Decimal(plan.totalAmount).toNumber();
 };
+
+export const areAllAmountsZeros = (plans: DepositPlan[]): boolean => {
+    return plans.every(plan => plan.allocations.every(a => a.amount === 0));
+};

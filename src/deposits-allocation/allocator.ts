@@ -1,5 +1,5 @@
 import {Deposit, DepositPlan, PlanType, Portfolio, PortfolioAllocation} from './types.ts';
-import {getRemainingToFulfill, isPlanEligible, isPlanFulfilled} from "./utils.ts";
+import {areAllAmountsZeros, getRemainingToFulfill, isPlanEligible, isPlanFulfilled} from "./utils.ts";
 import Decimal from 'decimal.js';
 
 
@@ -72,6 +72,18 @@ export const allocateDeposits = (
         portfolioId: portfolio.id,
         amount: 0
     }));
+
+    const allAmountsAreZeros = areAllAmountsZeros(depositPlans);
+
+    if (allAmountsAreZeros) {
+        const totalDepositAmount = deposits.reduce((sum, d) => sum + d.amount, 0);
+        const equalShare = totalDepositAmount / portfolios.length;
+
+        return portfolios.map(p => ({
+            portfolioId: p.id,
+            amount: equalShare
+        }));
+    }
 
     const workingPlans = depositPlans.map(plan => structuredClone(plan));
 
