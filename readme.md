@@ -82,7 +82,7 @@ The allocation process follows these rules:
 5. If there's still money left, it's distributed proportionally based on one-time plan allocations
 6. If no specific allocation rules apply, deposits are distributed equally across portfolios
 
-![](/home/yndj/Desktop/rules.png)
+![rules](https://github.com/user-attachments/assets/45e979e2-e36a-4517-aeb2-95ce43dc9c9a)
 
 ## Architecture
 
