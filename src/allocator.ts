@@ -58,12 +58,12 @@ export const allocateDeposits = (
 
     const workingPlans = JSON.parse(JSON.stringify(depositPlans)) as DepositPlan[];
 
-    const planFulfillment: Record<string, number> = {};
-    for (const plan of workingPlans) {
-        if (plan.type === PlanType.ONE_TIME) {
-            planFulfillment[plan.id] = 0;
-        }
-    }
+    const planFulfillment = workingPlans
+        .filter(plan => plan.type === PlanType.ONE_TIME)
+        .reduce<Record<string, number>>((acc, plan) => {
+            acc[plan.id] = 0;
+            return acc;
+        }, {});
 
     for (const deposit of deposits) {
         let remainingAmount = deposit.amount;
