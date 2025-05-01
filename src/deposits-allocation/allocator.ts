@@ -1,4 +1,4 @@
-import {Deposit, DepositPlan, PlanType, Portfolio, PortfolioAllocation} from './types';
+import {Deposit, DepositPlan, PlanType, Portfolio, PortfolioAllocation} from './types.ts';
 
 
 const getRemainingToFulfill = (
