@@ -1,4 +1,4 @@
-import {Portfolio, DepositPlan, Deposit, PortfolioAllocation, PlanType} from './types';
+import {Deposit, DepositPlan, PlanType, Portfolio, PortfolioAllocation} from './types';
 
 
 const getRemainingToFulfill = (
@@ -46,6 +46,10 @@ const isPlanFulfilled = (
     return planFulfillment[plan.id] >= plan.totalAmount;
 };
 
+const isPlanEligible = (plan: DepositPlan, remainingAmount: number, desiredPlanType: PlanType): boolean => {
+    return plan.isActive && plan.type === desiredPlanType && remainingAmount > 0
+};
+
 export const allocateDeposits = (
     portfolios: Portfolio[],
     depositPlans: DepositPlan[],
@@ -56,7 +60,7 @@ export const allocateDeposits = (
         amount: 0
     }));
 
-    const workingPlans = JSON.parse(JSON.stringify(depositPlans)) as DepositPlan[];
+    const workingPlans = depositPlans.map(plan => structuredClone(plan));
 
     const planFulfillment = workingPlans
         .filter(plan => plan.type === PlanType.ONE_TIME)
@@ -68,32 +72,25 @@ export const allocateDeposits = (
     for (const deposit of deposits) {
         let remainingAmount = deposit.amount;
 
-        for (let i = 0; i < workingPlans.length && remainingAmount > 0; i++) {
-            const plan = workingPlans[i];
+        for (const plan of workingPlans) {
+            if (!isPlanEligible(plan, remainingAmount, PlanType.ONE_TIME)) continue;
 
-            if (!plan.isActive) continue;
+            const before = remainingAmount;
+            remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
+            const applied = before - remainingAmount;
 
-            if (plan.type === PlanType.ONE_TIME) {
-                const appliedAmount = deposit.amount - remainingAmount;
-                remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
+            planFulfillment[plan.id] += applied;
 
-                planFulfillment[plan.id] += (deposit.amount - appliedAmount - remainingAmount);
-
-                if (isPlanFulfilled(plan, planFulfillment)) {
-                    plan.isActive = false;
-                }
+            if (isPlanFulfilled(plan, planFulfillment)) {
+                plan.isActive = false;
             }
         }
 
         if (remainingAmount > 0) {
-            for (let i = 0; i < workingPlans.length && remainingAmount > 0; i++) {
-                const plan = workingPlans[i];
+            for (const plan of workingPlans) {
+                if (!plan.isActive || plan.type !== PlanType.MONTHLY || remainingAmount !== plan.totalAmount) continue;
 
-                if (!plan.isActive || plan.type === PlanType.ONE_TIME) continue;
-
-                if (plan.type === PlanType.MONTHLY && remainingAmount === plan.totalAmount) {
-                    remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
-                }
+                remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
             }
         }
     }
