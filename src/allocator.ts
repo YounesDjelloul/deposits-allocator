@@ -88,7 +88,7 @@ export const allocateDeposits = (
 
         if (remainingAmount > 0) {
             for (const plan of workingPlans) {
-                if (!plan.isActive || plan.type !== PlanType.MONTHLY || remainingAmount !== plan.totalAmount) continue;
+                if (!isPlanEligible(plan, remainingAmount, PlanType.MONTHLY)) continue;
 
                 remainingAmount = applyPlanToResult(plan, remainingAmount, result, planFulfillment);
             }
