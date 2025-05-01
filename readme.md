@@ -16,6 +16,8 @@ robustness, testability, and maintainability.
 - Fall back to equal distribution when no specific allocation rules exist
 - Support for precise decimal calculations with arbitrary precision
 
+![Screenshot from 2025-05-02 06-16-13](https://github.com/user-attachments/assets/da95679a-46a0-479c-8e11-e5a9e090139d)
+
 ## Usage
 
 ### Basic Example
