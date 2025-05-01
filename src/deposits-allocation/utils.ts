@@ -1,10 +1,11 @@
 import {DepositPlan, PlanType} from "./types.ts";
+import Decimal from "decimal.js";
 
 export const isPlanFulfilled = (
     plan: DepositPlan,
     planFulfillment: Record<string, number>,
 ): boolean => {
-    return planFulfillment[plan.id] >= plan.totalAmount;
+    return new Decimal(planFulfillment[plan.id] || 0).greaterThanOrEqualTo(plan.totalAmount);
 };
 
 export const isPlanEligible = (plan: DepositPlan, remainingAmount: number, desiredPlanType: PlanType): boolean => {
@@ -15,9 +16,11 @@ export const getRemainingToFulfill = (
     plan: DepositPlan,
     planFulfillment: Record<string, number>
 ): number => {
-    const fulfilledAmount = planFulfillment[plan.id] || 0;
+    const fulfilledAmount = new Decimal(planFulfillment[plan.id] || 0);
 
     return plan.type === PlanType.ONE_TIME
-        ? Math.max(0, plan.totalAmount - fulfilledAmount)
-        : plan.totalAmount;
+        ? Decimal.max(0, new Decimal(plan.totalAmount).minus(fulfilledAmount))
+            .toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+            .toNumber()
+        : new Decimal(plan.totalAmount).toNumber();
 };

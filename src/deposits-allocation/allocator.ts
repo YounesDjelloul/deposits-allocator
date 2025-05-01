@@ -1,5 +1,6 @@
 import {Deposit, DepositPlan, PlanType, Portfolio, PortfolioAllocation} from './types.ts';
 import {getRemainingToFulfill, isPlanEligible, isPlanFulfilled} from "./utils.ts";
+import Decimal from 'decimal.js';
 
 
 const applyPlanToResult = (
@@ -8,10 +9,11 @@ const applyPlanToResult = (
     result: PortfolioAllocation[],
     planFulfillment: Record<string, number>
 ): number => {
-    const remainingToFulfill = getRemainingToFulfill(plan, planFulfillment);
+    const remainingToFulfill = new Decimal(getRemainingToFulfill(plan, planFulfillment));
+    const depositDecimal = new Decimal(depositAmount);
 
-    const amountToApply = Math.min(depositAmount, remainingToFulfill);
-    const ratio = amountToApply / plan.totalAmount;
+    const amountToApply = Decimal.min(depositDecimal, remainingToFulfill);
+    const ratio = amountToApply.div(plan.totalAmount);
 
     const resultMap = new Map(result.map(pa => [pa.portfolioId, pa]));
 
@@ -19,15 +21,21 @@ const applyPlanToResult = (
         const portfolioAllocation = resultMap.get(planAllocation.portfolioId);
         if (!portfolioAllocation) continue;
 
-        const amountToAdd = ratio === 1
-            ? planAllocation.amount
-            : Math.round(planAllocation.amount * ratio * 100) / 100;
+        const allocationAmount = new Decimal(planAllocation.amount);
 
-        portfolioAllocation.amount += amountToAdd;
+        const amountToAdd = ratio.equals(1)
+            ? allocationAmount
+            : allocationAmount.mul(ratio).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+
+        portfolioAllocation.amount = new Decimal(portfolioAllocation.amount)
+            .plus(amountToAdd)
+            .toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+            .toNumber();
     }
 
-    return Math.max(0, depositAmount - amountToApply);
+    return depositDecimal.minus(amountToApply).toNumber();
 };
+
 
 const fulfillPlans = (
     plans: DepositPlan[],
